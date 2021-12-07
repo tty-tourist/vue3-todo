@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <script src="https://unpkg.com/vue@next"></script>
+        <link rel="stylesheet" href="style.css">
+        <meta charset="UTF-8"/>
+        <title>Todo</title>
+    </head>
+    <body>
+
+
+        <div id="components-app" class="demo">
+            <div v-if="!editing">
+                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">time it</span><span>]</span></div>
+            </div>
+            <div v-if="editing">
+                <input autocomplete="off" v-model="heading" class="big line"
+                       @keyup.enter="enableEditing"
+                       @keyup.esc="enableEditing"
+                />
+                <!-- <button @click="disableEditing"> Cancel </button>
+                     <button @click="saveEdit"> Save </button> -->
+            </div>
+            <transition-group name="list-complete" tag="ol">
+                <todo-item
+                    v-for="(item, index) in todoList"
+                    v-bind:todo="item"
+                    v-bind:key="item.id"
+                    @remove="todoList.splice(index, 1)"
+                    @done="item.done = !item.done;"
+                    :class="{ crossed: item.done, timed:item.timed }"
+                    @promote="promote(index)"
+                    @demote="demote(index)"
+                    @set-time-toggle="setTimeToggle"
+                    :first="index > 0"
+                    :last="index != todoList.length - 1"
+                    :index="index"
+                    :timed="index == firstUnchecked && timingOn"
+                    :timespent="item.counter > 0"
+                    :settime="setTime"
+                    :timeset="this.todoList[index].timeset"
+                    class="list-complete-item"
+                    
+                    
+                ></todo-item>
+                <li v-bind:key="0">
+                    <form v-on:submit.prevent="add">
+                        <input
+                            @keyup.enter="add"
+                            autocomplete="off"
+                            v-model="newTodoText"
+                            id="new-todo"
+                            class="small line"
+                        />
+                        <span class="clickable">&#10711;</span>
+                        <input
+                            @keyup.enter="add"
+                            autocomplete="off"
+                            v-model="newTodoTime"
+                            id="new-todo-time"
+                            class="small line"
+                            size="3"
+                            type="tel"
+                        />
+                    </form>
+                </li>
+            </transition-group>
+            
+            <div v-if="allChecked"><img alt="" src="pics/fireworks.gif"/></div>
+
+            <pre>{{todoList}}</pre>
+        </div>
+
+        <script>
+         function array_move(arr, old_index, new_index) {
+             if (new_index >= arr.length) {
+                 var k = new_index - arr.length + 1;
+                 while (k--) {
+                     arr.push(undefined);
+                 }
+             }
+             arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+         };
+
+         function get_max(arr, prop) {
+             if(arr.length < 1) {
+                 return 1;
+	     } else {
+  	         var max;
+    	         for (var i=0 ; i<arr.length ; i++) {
+      	             if (!max || parseInt(arr[i][prop]) > parseInt(max[prop]))
+        	         max = arr[i];
+   	         }	
+    	         return max.id + 1;
+	     }
+         }
+
+         
+         
+         const ComponentsApp = {
+             data() {
+                 return {
+                     heading: '',
+                     editing: false,
+                     newTodoText: '',
+                     newTodoTime: null,
+                     todoList: [],
+                     nextTodoId: 0,
+                     timingOn: false,
+                     setTime: false
+                     
+                 }
+             },
+             mounted() {
+                 if (localStorage.todoList) {
+                     this.todoList = JSON.parse(localStorage.todoList);
+                 }
+                 if (localStorage.heading) {
+                     this.heading = localStorage.heading;
+                 } else {
+                     this.heading = "TODO";
+                 }
+                 this.nextTodoId = get_max(this.todoList, "id");
+             },
+             watch: {
+	         todoList: {
+                     handler(newTitle) {
+		         localStorage.todoList = JSON.stringify(newTitle);
+                     },
+                     deep: true
+	         },
+                 firstUncheckedId() {
+
+                     if (typeof this.firstUnchecked !== 'undefined') {
+                         if(this.timingOn) {
+                             clearInterval(this.t);
+                             this.t = setInterval(() => {
+                                 this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60
+                                 this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60
+                                 
+                             }, 1000)
+                             
+                         } else {
+                             clearInterval(this.t);
+                         }
+                     }
+                     
+                 },
+                 timingOn(val) {
+                     if (typeof this.firstUnchecked !== 'undefined') {
+                         if(this.timingOn) {
+                             clearInterval(this.t);
+                             this.t = setInterval(() => {
+                                 this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60
+                                 this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60
+                             }, 1000)
+                             
+                         } else {
+                             clearInterval(this.t);
+                         }
+                     }
+                 },
+                 editing() {
+                     localStorage.heading = this.heading;
+                 },
+                 
+             },
+             methods: {
+                 add() {
+                     this.todoList.push({
+                         id: this.nextTodoId++,
+                         text: this.newTodoText,
+                         done: false,
+                         timed: false,
+                         counter: 0,
+                         minutes: 0,
+                         seconds: 0,
+                         timeset: (this.newTodoTime ? this.newTodoTime.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') : 0)
+                         
+                     })
+                     this.newTodoText = '';
+                     this.newTodoTime = null;
+                 },
+                 promote (index) {
+                     if (index > 0) {
+                         array_move(this.todoList, index, index - 1)
+                     }
+                 },
+                 demote (index) {
+                     if (index < this.todoList.length - 1) {
+                         array_move(this.todoList, index, index + 1)
+                     }
+                 },
+                 clear () {
+                     this.todoList = [];
+                     this.nextTodoId = 1
+                 },
+                 enableEditing: function(){
+                     //this.tempValue = this.value;
+                     this.editing = !this.editing;
+                 },
+                 timingToggle: function(){
+                     //this.tempValue = this.value;
+                     this.timingOn = !this.timingOn;
+                 },
+                 timingIt: function(index){
+                     //this.tempValue = this.value;
+                     this.timingOn = !this.timingOn;
+                 },
+                 setTimeToggle: function(){
+                     //this.tempValue = this.value;
+                     this.setTime = !this.setTime;
+                 },
+                 changeTime2: function(){
+                     //this.tempValue = this.value;
+                     this.setTime = !this.setTime;
+                     console.log("hej");
+                 }
+                 
+                 
+             },
+             computed: {
+                 allChecked: function() {
+                     return this.todoList.length > 0 && this.todoList.every(e => e.done == true);
+                     
+                 },
+                 firstUnchecked: function() {
+                     return this.todoList.findIndex((x) => !x.done);
+                 },
+                 firstUncheckedId: function() {
+                     var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
+                     console.log(firstUnchecked2);
+                     return this.todoList.length > 0 && firstUnchecked2 >= 0 &&this.todoList[firstUnchecked2].id;
+                 }
+             }
+         }
+         
+         const app = Vue.createApp(ComponentsApp)
+         
+         app.component('todo-item', {
+             props: ['todo', 'first', 'last', 'index', 'timed', 'timespent', 'settime', 'timeset'],
+             template: `<li>
+                 <span @click="$emit('done')" style="margin-right:25px">{{ todo.text }}</span>
+                 <button class="clickable" @click="$emit('promote')" v-if="first">&#x25B4;</button>
+                 <button class="clickable" @click="$emit('demote')" v-if="last">&#x25BE;</button>
+                 <button class="clickable" @click="$emit('remove')">&#10006;</button>
+                 <button class="clickable" @click="$emit('set-time-toggle')">&#10711;</button>
+                 <input v-if="settime" class="small line" size="2"  /> 
+                 <span>{{timeset}}</span>
+                 <span v-if="timed" class="timed"> =></span>
+                 <span v-if="timespent" class="timed"  style="margin-left:10px">{{ String(todo.minutes).padStart(2, '0') }}:{{ String(todo.seconds).padStart(2, '0') }} </span>
+             </li>
+             `
+         })
+
+         
+         app.mount('#components-app')
+        </script>
+        
+    </body>
+</html>
