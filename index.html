@@ -38,8 +38,14 @@
                     :timed="index == firstUnchecked && timingOn"
                     :timespent="item.counter > 0"
                     :settime="setTime"
-                    :timeset="this.todoList[index].timeset"
+                    :timeset="todoList[index].timeset"
                     class="list-complete-item"
+                    v-model="todoList[index].timeset"
+                    @change-time="changeTime()"
+                    :hastime="item.minutes + item.seconds > 0 && item.timeset > 0"
+                    
+                    
+                    
                     
                     
                 ></todo-item>
@@ -211,10 +217,8 @@
                      //this.tempValue = this.value;
                      this.setTime = !this.setTime;
                  },
-                 changeTime2: function(){
-                     //this.tempValue = this.value;
-                     this.setTime = !this.setTime;
-                     console.log("hej");
+                 changeTime() {
+                     console.log("e");
                  }
                  
                  
@@ -231,30 +235,50 @@
                      var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
                      console.log(firstUnchecked2);
                      return this.todoList.length > 0 && firstUnchecked2 >= 0 &&this.todoList[firstUnchecked2].id;
-                 }
+                 },
+                 model: {
+                     
+		     get() {
+                         console.log(this.value);
+                         return this.value },
+		     set(v) { this.$emit("input", v) }
+                     
+                     
+                                     
+		 }
              }
          }
          
          const app = Vue.createApp(ComponentsApp)
          
          app.component('todo-item', {
-             props: ['todo', 'first', 'last', 'index', 'timed', 'timespent', 'settime', 'timeset'],
+             props: ['todo', 'first', 'last', 'index', 'timed', 'timespent', 'settime', 'timeset', 'value', 'hastime'],
              template: `<li>
                  <span @click="$emit('done')" style="margin-right:25px">{{ todo.text }}</span>
                  <button class="clickable" @click="$emit('promote')" v-if="first">&#x25B4;</button>
                  <button class="clickable" @click="$emit('demote')" v-if="last">&#x25BE;</button>
                  <button class="clickable" @click="$emit('remove')">&#10006;</button>
                  <button class="clickable" @click="$emit('set-time-toggle')">&#10711;</button>
-                 <input v-if="settime" class="small line" size="2"  /> 
-                 <span>{{timeset}}</span>
-                 <span v-if="timed" class="timed"> =></span>
                  <span v-if="timespent" class="timed"  style="margin-left:10px">{{ String(todo.minutes).padStart(2, '0') }}:{{ String(todo.seconds).padStart(2, '0') }} </span>
+                 <span v-if="hastime" class="timed"> / </span>      
+                 <span  v-if="!settime">{{timeset}}</span>
+                 <input v-if="settime" :value="timeset" class="small line" size="2" type="text" @input="(changeTime($event, index))"/>
+                 
+                 
              </li>
-             `
+             `,
+             methods: {
+                 changeTime(e, i) {
+                     this.$root.todoList[i].timeset = e.target.value;
+                     
+
+                 }
+                 
+             }
          })
 
-         
-         app.mount('#components-app')
+             
+             app.mount('#components-app')
         </script>
         
     </body>
