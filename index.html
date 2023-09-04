@@ -9,10 +9,11 @@
     <body>
 
 
-        <div id="components-app" class="demo" :style="{ backgroundColor: bgColor}">
-                 
+        <div id="components-app" class="demo" >
+            <div id="appBg" :style="{ backgroundColor: bgColor}">
+                
             <div v-if="!editing">
-                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">{{timeText}}</span><span>]</span></div>
+                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">{{timeText}}</span>, &nbsp;<span class="clickable" @click="bgToggle">hej</span>]</span></div>
             </div>
             <div v-if="editing">
                 <input autocomplete="off" v-model="heading" class="big line"
@@ -71,6 +72,7 @@
             <div v-if="allChecked"><img alt="" src="pics/fireworks.gif"/></div>
 
             <!-- <pre>{{todoList}}</pre> -->
+            </div>
         </div>
 
         <script>
@@ -212,6 +214,9 @@
                      this.timingOn = !this.timingOn;
                      if (this.timingOn) {this.timeText = 'pause it' } else
                      {this.timeText = 'time it' }
+                 },
+                 bgToggle: function(){
+                     this.bgColor = '#9F2B68';
                  },
                  timingIt: function(index){
                      //this.tempValue = this.value;
