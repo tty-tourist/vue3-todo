@@ -9,9 +9,10 @@
     <body>
 
 
-        <div id="components-app" class="demo">
+        <div id="components-app" class="demo" :style="{ backgroundColor: bgColor}">
+                 
             <div v-if="!editing">
-                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">time it</span><span>]</span></div>
+                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">{{timeText}}</span><span>]</span></div>
             </div>
             <div v-if="editing">
                 <input autocomplete="off" v-model="heading" class="big line"
@@ -38,46 +39,43 @@
                     :timed="index == firstUnchecked && timingOn"
                     :timespent="item.counter > 0"
                     :settime="setTime"
-                    :timeset="todoList[index].timeset"
                     class="list-complete-item"
-                    v-model="todoList[index].timeset"
                     @change-time="changeTime()"
                     :hastime="item.minutes + item.seconds > 0 && item.timeset > 0"
-                    
-                    
-                    
-                    
-                    
+                    :overdue="item.timeset > 0 && item.minutes >= item.timeset && index == firstUnchecked"
                 ></todo-item>
                 <li v-bind:key="0">
                     <form v-on:submit.prevent="add">
                         <input
-                            @keyup.enter="add"
+                            @keyup.enter="add(false)"
                             autocomplete="off"
                             v-model="newTodoText"
                             id="new-todo"
+                            ref="newTodo"
                             class="small line"
                         />
-                        <span class="clickable">&#10711;</span>
+                        <span style="margin-right:15px"></span>
                         <input
-                            @keyup.enter="add"
+                            @keyup.enter="add(true)"
                             autocomplete="off"
                             v-model="newTodoTime"
                             id="new-todo-time"
                             class="small line"
-                            size="3"
-                            type="tel"
+                            size="1"
                         />
+                        <span>:00</span>
                     </form>
                 </li>
             </transition-group>
             
             <div v-if="allChecked"><img alt="" src="pics/fireworks.gif"/></div>
 
-            <pre>{{todoList}}</pre>
+            <!-- <pre>{{todoList}}</pre> -->
         </div>
 
         <script>
+
+         
          function array_move(arr, old_index, new_index) {
              if (new_index >= arr.length) {
                  var k = new_index - arr.length + 1;
@@ -113,7 +111,10 @@
                      todoList: [],
                      nextTodoId: 0,
                      timingOn: false,
-                     setTime: false
+                     setTime: false,
+                     timeText: 'time it',
+                     bgColor: '#013220'
+
                      
                  }
              },
@@ -172,7 +173,7 @@
                  
              },
              methods: {
-                 add() {
+                 add(time) {
                      this.todoList.push({
                          id: this.nextTodoId++,
                          text: this.newTodoText,
@@ -181,11 +182,13 @@
                          counter: 0,
                          minutes: 0,
                          seconds: 0,
-                         timeset: (this.newTodoTime ? this.newTodoTime.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') : 0)
+                         timeset: (this.newTodoTime > 0 ? this.newTodoTime.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') : "")
+                         
                          
                      })
                      this.newTodoText = '';
                      this.newTodoTime = null;
+                     if (time) {this.$refs.newTodo.focus()}
                  },
                  promote (index) {
                      if (index > 0) {
@@ -206,8 +209,9 @@
                      this.editing = !this.editing;
                  },
                  timingToggle: function(){
-                     //this.tempValue = this.value;
                      this.timingOn = !this.timingOn;
+                     if (this.timingOn) {this.timeText = 'pause it' } else
+                     {this.timeText = 'time it' }
                  },
                  timingIt: function(index){
                      //this.tempValue = this.value;
@@ -215,7 +219,7 @@
                  },
                  setTimeToggle: function(){
                      //this.tempValue = this.value;
-                     this.setTime = !this.setTime;
+                     this.setTime = !this.setTime;                 
                  },
                  changeTime() {
                      console.log("e");
@@ -235,35 +239,30 @@
                      var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
                      console.log(firstUnchecked2);
                      return this.todoList.length > 0 && firstUnchecked2 >= 0 &&this.todoList[firstUnchecked2].id;
-                 },
-                 model: {
-                     
-		     get() {
-                         console.log(this.value);
-                         return this.value },
-		     set(v) { this.$emit("input", v) }
-                     
-                     
-                                     
-		 }
+                 }
              }
          }
          
          const app = Vue.createApp(ComponentsApp)
          
          app.component('todo-item', {
-             props: ['todo', 'first', 'last', 'index', 'timed', 'timespent', 'settime', 'timeset', 'value', 'hastime'],
+             props: ['todo', 'first', 'last', 'index', 'timed', 'timespent', 'settime', 'value', 'hastime', 'overdue'],
              template: `<li>
-                 <span @click="$emit('done')" style="margin-right:25px">{{ todo.text }}</span>
+                 <span @click="$emit('done')">{{ todo.text }}</span>
+
+                 <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                 <span v-if="timespent" :class="{ overdue: overdue, timed: timed}" @click="$emit('set-time-toggle')">{{ String(todo.minutes).padStart(2, '0') }}:{{ String(todo.seconds).padStart(2, '0') }} </span>
+                 <span v-if="hastime" :class="{timed: timed}"> / </span>      
+                 <input v-if="settime" :value="todo.timeset" class="small line" size="1" type="text" @input="(changeTime($event, index))" @keyup.enter="$emit('set-time-toggle')" @keyup.esc="$emit('set-time-toggle')"/>
+                 <span  v-if="!settime && todo.timeset > 0" @click="$emit('set-time-toggle')">{{ String(todo.timeset).padStart(2, '0') }}</span>
+                 <span  v-if="todo.timeset" @click="$emit('set-time-toggle')">:00</span>
+
+                 
                  <button class="clickable" @click="$emit('promote')" v-if="first">&#x25B4;</button>
                  <button class="clickable" @click="$emit('demote')" v-if="last">&#x25BE;</button>
                  <button class="clickable" @click="$emit('remove')">&#10006;</button>
-                 <button class="clickable" @click="$emit('set-time-toggle')">&#10711;</button>
-                 <span v-if="timespent" class="timed"  style="margin-left:10px">{{ String(todo.minutes).padStart(2, '0') }}:{{ String(todo.seconds).padStart(2, '0') }} </span>
-                 <span v-if="hastime" class="timed"> / </span>      
-                 <span  v-if="!settime">{{timeset}}</span>
-                 <input v-if="settime" :value="timeset" class="small line" size="2" type="text" @input="(changeTime($event, index))"/>
                  
+                 <span v-if="timed" class="now">&nbsp;&lt;=</span>                 
                  
              </li>
              `,
@@ -277,8 +276,8 @@
              }
          })
 
-             
-             app.mount('#components-app')
+         
+         app.mount('#components-app')
         </script>
         
     </body>
