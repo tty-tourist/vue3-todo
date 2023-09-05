@@ -10,10 +10,10 @@
 
 
         <div id="components-app" class="demo" >
-            <div id="appBg" :style="{ backgroundColor: bgColor}">
+            <div id="appBg" :class="{normal_bg: true, blinker_bg: blinkerOn}" > <!-- :style="{ backgroundColor: bgColor}"  -->
                 
             <div v-if="!editing">
-                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">{{timeText}}</span>, &nbsp;<span class="clickable" @click="bgToggle">hej</span>]</span></div>
+                <div class="header"><h1 class="big" @click="enableEditing">{{heading}}</h1>&nbsp;&nbsp;<span>[</span><span @click="clear" class="clickable">Clear list</span><span>, &nbsp;</span><span class="clickable" @click="timingToggle">{{timeText}}</span>]</span></div>
             </div>
             <div v-if="editing">
                 <input autocomplete="off" v-model="heading" class="big line"
@@ -68,10 +68,10 @@
                     </form>
                 </li>
             </transition-group>
+            <!-- <pre>{{todoList}}</pre> -->
             
             <div v-if="allChecked"><img alt="" src="pics/fireworks.gif"/></div>
 
-            <!-- <pre>{{todoList}}</pre> -->
             </div>
         </div>
 
@@ -115,8 +115,7 @@
                      timingOn: false,
                      setTime: false,
                      timeText: 'time it',
-                     bgColor: '#013220'
-
+                     blinkerOn: false
                      
                  }
              },
@@ -172,6 +171,11 @@
                  editing() {
                      localStorage.heading = this.heading;
                  },
+                 timeAlarm() {
+                     if (this.timeAlarm)
+                     {this.blinkerOn = true} else
+                     {this.blinkerOn = false}
+                 }
                  
              },
              methods: {
@@ -184,7 +188,7 @@
                          counter: 0,
                          minutes: 0,
                          seconds: 0,
-                         timeset: (this.newTodoTime > 0 ? this.newTodoTime.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') : "")
+                         timeset: parseInt(this.newTodoTime > 0 ? this.newTodoTime.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') : "")
                          
                          
                      })
@@ -215,9 +219,6 @@
                      if (this.timingOn) {this.timeText = 'pause it' } else
                      {this.timeText = 'time it' }
                  },
-                 bgToggle: function(){
-                     this.bgColor = '#9F2B68';
-                 },
                  timingIt: function(index){
                      //this.tempValue = this.value;
                      this.timingOn = !this.timingOn;
@@ -240,9 +241,16 @@
                  firstUnchecked: function() {
                      return this.todoList.findIndex((x) => !x.done);
                  },
+                 timeAlarm: function() {
+                     var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
+                     var alarm = this.timingOn && this.todoList[firstUnchecked2].minutes >= this.todoList[firstUnchecked2].timeset + 1;
+                     return alarm
+                         
+                 },
+
+                 
                  firstUncheckedId: function() {
                      var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
-                     console.log(firstUnchecked2);
                      return this.todoList.length > 0 && firstUnchecked2 >= 0 &&this.todoList[firstUnchecked2].id;
                  }
              }
