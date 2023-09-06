@@ -68,7 +68,7 @@
                     </form>
                 </li>
             </transition-group>
-            <!-- <pre>{{todoList}}</pre> -->
+
             
             <div v-if="allChecked"><img alt="" src="pics/fireworks.gif"/></div>
 
@@ -139,12 +139,13 @@
 	         },
                  firstUncheckedId() {
 
-                     if (typeof this.firstUnchecked !== 'undefined') {
+                     if (this.firstUnchecked !== 'undefined' && this.firstUnchecked >= 0) {
                          if(this.timingOn) {
                              clearInterval(this.t);
                              this.t = setInterval(() => {
-                                 this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60
-                                 this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60
+                                 if (this.todoList.length > 0) {
+                                     this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60;
+                                     this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60; }
                                  
                              }, 1000)
                              
@@ -154,15 +155,15 @@
                      }
                      
                  },
-                 timingOn(val) {
-                     if (typeof this.firstUnchecked !== 'undefined') {
+                 timingOn() {
+                     if (this.firstUnchecked !== 'undefined' && this.firstUnchecked >= 0 ) {
                          if(this.timingOn) {
                              clearInterval(this.t);
                              this.t = setInterval(() => {
-                                 this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60
-                                 this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60
+                                 if (this.todoList.length > 0) {
+                                     this.todoList[this.firstUnchecked].seconds = ++this.todoList[this.firstUnchecked].counter % 60;
+                                     this.todoList[this.firstUnchecked].minutes = parseInt( this.todoList[this.firstUnchecked].counter / 60, 10) % 60; }
                              }, 1000)
-                             
                          } else {
                              clearInterval(this.t);
                          }
@@ -207,8 +208,10 @@
                      }
                  },
                  clear () {
+                     this.timingOn = false;
                      this.todoList = [];
-                     this.nextTodoId = 1
+                     this.nextTodoId = 1;
+                     this.timeText = 'time it';
                  },
                  enableEditing: function(){
                      //this.tempValue = this.value;
@@ -226,9 +229,6 @@
                  setTimeToggle: function(){
                      //this.tempValue = this.value;
                      this.setTime = !this.setTime;                 
-                 },
-                 changeTime() {
-                     console.log("e");
                  }
                  
                  
@@ -242,9 +242,13 @@
                      return this.todoList.findIndex((x) => !x.done);
                  },
                  timeAlarm: function() {
+
                      var firstUnchecked2 = this.todoList.findIndex((x) => !x.done);
-                     var alarm = this.timingOn && this.todoList[firstUnchecked2].minutes >= this.todoList[firstUnchecked2].timeset + 1;
-                     return alarm
+
+                     if (firstUnchecked2 >= 0) 
+                         {var alarm = this.timingOn && this.todoList[firstUnchecked2].minutes >= this.todoList[firstUnchecked2].timeset + 1;
+                         return alarm} else
+                     {return false}
                          
                  },
 
